@@ -25,8 +25,71 @@ namespace Bargreen.Services
         public decimal TotalInventoryValue { get; set; }
     }
 
+    internal class BalanceAmounts
+    {
+        public decimal ValueOnInventory { get; set; }
+        public decimal ValueInAccounting { get; set; }
+    }
 
-    public class InventoryService
+    public interface IInventoryService
+    {
+        IEnumerable<InventoryBalance> GetInventoryBalances();
+
+        IEnumerable<AccountingBalance> GetAccountingBalances();
+    }
+
+    public interface IInventoryServiceUtility
+    {
+        IEnumerable<InventoryReconciliationResult> ReconcileInventoryToAccounting( 
+             IEnumerable<InventoryBalance> inventoryBalances, 
+             IEnumerable<AccountingBalance> accountingBalances
+            );
+    }
+
+    public class InventoryServiceUtility : IInventoryServiceUtility
+    {
+        public IEnumerable<InventoryReconciliationResult> ReconcileInventoryToAccounting(
+                    IEnumerable<InventoryBalance> inventoryBalances, 
+                    IEnumerable<AccountingBalance> accountingBalances)
+        {
+            // TODO-CHALLENGE: Compare inventory balances to accounting balances and find differences
+            // The method should return information that indicates where inventory balances match or mismatch the accounting balances.
+
+            IDictionary<string, BalanceAmounts> balances = new Dictionary<string, BalanceAmounts>();
+
+            foreach (InventoryBalance item in inventoryBalances)
+            {
+                if (!balances.ContainsKey(item.ItemNumber))
+                {
+                    balances.Add(item.ItemNumber, new BalanceAmounts());
+                }
+                balances[item.ItemNumber].ValueOnInventory = item.QuantityOnHand * item.PricePerItem;
+            }
+            foreach (AccountingBalance item in accountingBalances)
+            {
+                if (!balances.ContainsKey(item.ItemNumber))
+                {
+                    balances.Add(item.ItemNumber, new BalanceAmounts());
+                }
+                balances[item.ItemNumber].ValueInAccounting = item.TotalInventoryValue;
+            }
+
+            IList<InventoryReconciliationResult> results = new List<InventoryReconciliationResult>();
+            foreach (var balance in balances)
+            {
+                InventoryReconciliationResult res = new InventoryReconciliationResult
+                {
+                    ItemNumber = balance.Key,
+                    TotalValueOnHandInInventory = balance.Value.ValueOnInventory,
+                    TotalValueInAccountingBalance = balance.Value.ValueInAccounting
+                };
+                results.Add(res);
+            }
+            return results;
+        }
+    }
+
+    public class InventoryService : IInventoryService
     {
         public IEnumerable<InventoryBalance> GetInventoryBalances()
         {
@@ -102,12 +165,6 @@ namespace Bargreen.Services
                      TotalInventoryValue = 17.99M
                 }
             };
-        }
-
-        public static IEnumerable<InventoryReconciliationResult> ReconcileInventoryToAccounting(IEnumerable<InventoryBalance> inventoryBalances, IEnumerable<AccountingBalance> accountingBalances)
-        {
-            //TODO-CHALLENGE: Compare inventory balances to accounting balances and find differences
-            throw new NotImplementedException();
         }
     }
 }

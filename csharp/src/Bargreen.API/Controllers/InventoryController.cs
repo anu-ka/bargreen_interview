@@ -14,28 +14,36 @@ namespace Bargreen.API.Controllers
     [ApiController]
     public class InventoryController : ControllerBase
     {
+        private readonly IInventoryService inventoryService;
+        private readonly IInventoryServiceUtility inventoryServiceUtility;
+
+        public InventoryController(IInventoryService service, IInventoryServiceUtility serviceUtility)
+        {
+            this.inventoryService = service;
+            this.inventoryServiceUtility = serviceUtility;
+        }
         [Route("InventoryBalances")]
         [HttpGet]
-        public IEnumerable<InventoryBalance> GetInventoryBalances()
+        public async Task<IEnumerable<InventoryBalance>> GetInventoryBalances()
         {
-            var inventoryService = new InventoryService();
-            return inventoryService.GetInventoryBalances();
+            return await Task.Run(() => this.inventoryService.GetInventoryBalances());
         }
 
         [Route("AccountingBalances")]
         [HttpGet]
-        public IEnumerable<AccountingBalance> GetAccountingBalances()
+        public async Task<IEnumerable<AccountingBalance>> GetAccountingBalances()
         {
-            var inventoryService = new InventoryService();
-            return inventoryService.GetAccountingBalances();
+            return await Task.Run(() => this.inventoryService.GetAccountingBalances());
         }
 
         [Route("InventoryReconciliation")]
         [HttpGet]
-        public IEnumerable<InventoryReconciliationResult> GetReconciliation()
+        public async Task<IEnumerable<InventoryReconciliationResult>> GetReconciliation()
         {
-            var inventoryService = new InventoryService();
-            return InventoryService.ReconcileInventoryToAccounting(inventoryService.GetInventoryBalances(), inventoryService.GetAccountingBalances());
+            return await Task.Run(() => this.inventoryServiceUtility.ReconcileInventoryToAccounting(
+                this.inventoryService.GetInventoryBalances(),
+                this.inventoryService.GetAccountingBalances())
+            );
         }
     }
 }
